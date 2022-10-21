@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 
 import unittest, json
-
 import restdir.directory as rd
-
-ITEM0 = 'prueba'
 
 class TestDirImplementation(unittest.TestCase):
 
