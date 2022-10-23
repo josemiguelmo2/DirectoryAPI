@@ -12,10 +12,17 @@ from collections import deque
 BD_PATH = "./db/data.db"
 ADMIN="admin"
 
+
+
+PERMISSION_ERR = 0
+DIR_NOTFOUND_ERR = 1 
+ALREADYEXISTS_ERR = 2
+DOESNOTEXIST_ERR = 3
 class DirectoyException(Exception):
     '''Errores causados por fallos de la persistencia'''
-    def __init__(self, message='unknown'):
+    def __init__(self, message='unknown', code='uknown'):
         self.msg = message
+        self.code = code
 
     def __str__(self):
         return f'DirestoryError: {self.msg}'
@@ -34,6 +41,7 @@ class Directory:
                 self.bd_con.commit()
                 self.bd_con.close()
                 self.init_root()
+
         except Exception as Error:
             print(Error)
         
@@ -114,7 +122,7 @@ class Directory:
         sql_data = (uuid,)
         sql_sentence="SELECT * FROM directories WHERE uuid=?"
         cur.execute(sql_sentence,sql_data)
-        if not cur.fetchone()[0]:
+        if not cur.fetchall():
             return False
         return True
     
@@ -156,7 +164,7 @@ class Directory:
     def _get_dirChilds(self, uuid):
         self.bd_con = sqlite3.connect(BD_PATH)
         cur = self.bd_con.cursor()
-        sql_data = (str(uuid))
+        sql_data = (str(uuid),)
         sql_sentence = ("SELECT childs FROM directories WHERE uuid=?")
         
         cur.execute(sql_sentence, sql_data)
@@ -254,13 +262,12 @@ class Directory:
     def new_dir(self, uuid_parent, name, user):
         '''Crea un nuevo directorio incluyendolo en la BD'''
         if not self._checkDirectory(uuid_parent):
-            raise DirectoyException(f"Directory {uuid_parent} doesn't exist")
+            raise DirectoyException(f"Directory {uuid_parent} doesn't exist", DIR_NOTFOUND_ERR)
 
         has_permission = self._checkUser_Writeable(uuid_parent, user)
-        print(has_permission)
+
         if not has_permission:
-            #throw_exception
-            pass
+            raise DirectoyException(f"User {user} doesn't have writing permissions", PERMISSION_ERR)
 
         '''Añade nuevo child al parent'''
 
@@ -271,7 +278,7 @@ class Directory:
         childs_list = json.loads(childs) 
         for child in childs_list:
             if name == self._get_Name_dir(child):
-                raise DirectoyException(f'Another child with the name {name} in current directory')
+                raise DirectoyException(f'Another child with the name {name} in current directory', ALREADYEXISTS_ERR)
                     
         childs_list.append(new_child)
         childs_str = json.dumps(childs_list)
@@ -288,14 +295,18 @@ class Directory:
         
         readable_by = list()
         writeable_by = list()
+        files=list()
+        childs=list()
         readable_by.append(user)
         writeable_by.append(user)
         
         readable_by_str=json.dumps(readable_by)
         writeable_by_str=json.dumps(writeable_by)
+        files_str=json.dumps(files)
+        childs_str=json.dumps(childs)
 
-        sql_data=(str(id), uuid_parent, name, readable_by_str, writeable_by_str)
-        sql_sentence = ("INSERT INTO directories(uuid, uuid_parent, name, readable_by, writeable_by) VALUES(?,?,?,?,?)")
+        sql_data=(str(id), uuid_parent, name, childs_str, files_str, readable_by_str, writeable_by_str)
+        sql_sentence = ("INSERT INTO directories(uuid, uuid_parent, name, childs, tuples, readable_by, writeable_by) VALUES(?,?,?,?,?,?,?)")
         
         cur.execute(sql_sentence, sql_data)
 
@@ -306,14 +317,14 @@ class Directory:
     def remove_dir(self, uuid_parent, name, user):
         '''Elimina un directorio de la BD'''
         if not self._checkDirectory(uuid_parent):
-            raise DirectoyException(f"Directory {uuid_parent} doesn't exist")
+            raise DirectoyException(f"Directory {uuid_parent} doesn't exist", DIR_NOTFOUND_ERR)
         
         id_dir = self._get_UUID_dir(uuid_parent, name)
         
         childs = self._get_dirChilds(uuid_parent)   
         childs_list = json.loads(childs)
         if id_dir not in childs_list:
-            raise DirectoyException(f"It doesn't exist a directory with the name {name}")
+            raise DirectoyException(f"It doesn't exist a directory with the name {name}", DOESNOTEXIST_ERR)
 
         for child in childs_list:
             if id_dir == child:
@@ -322,7 +333,7 @@ class Directory:
 
         has_permission = self._checkUser_Writeable(id_dir, user)
         if not has_permission:
-                raise DirectoyException(f"User {user} doesn't have writing permissions")
+                raise DirectoyException(f"User {user} doesn't have writing permissions", PERMISSION_ERR)
         
         self.bd_con = sqlite3.connect(BD_PATH)
         cur = self.bd_con.cursor()

@@ -6,10 +6,10 @@
 
 from flask import Flask, make_response, request
 
-from restlist.lista import List
+from restdir.directory import Directory
 
-app = Flask("restlist")
-LIST = List()
+app = Flask("restdir")
+DIR = Directory()
 
 
 @app.route('/v1/elements', methods=['PUT'])

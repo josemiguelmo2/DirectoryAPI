@@ -10,7 +10,10 @@ import requests
 
 
 HEADERS = {"content-type": "application/json"}
-
+token='1234'
+ADMIN_HEADER = {"admin-token": "admin"}
+USER_HEADER = {"user-token": "1234"}
+URI = "http://127.0.0.1:5000"
 
 class RestListError(Exception):
     '''Error caused by wrong responses from server'''
@@ -32,42 +35,57 @@ class RestListClient:
             self.root = f'{self.root}/'
         self.timeout = timeout
 
-    def append(self, element):
-        '''Send request to add an element into the list'''
-        if not isinstance(element, str):
-            raise ValueError("element must be a string")
-        req_body = {"element": element}
-        result = requests.put(
-            f'{self.root}v1/elements',
-            headers=HEADERS,
-            data=json.dumps(req_body),
-            timeout=self.timeout
-        )
-        if result.status_code != 200:
-            raise RestListError(f'Unexpected status code: {result.status_code}')
+    def root_info(self):
 
-    def __getitem__(self, index):
-        '''Access to a item by its index'''
-        if not isinstance(index, int):
-            raise ValueError("index must be an integer value")
         result = requests.get(
-            f'{self.root}v1/elements/{index}',
-            timeout=self.timeout
-        )
-        if result.status_code == 404:
-            raise IndexError("list index out of range")
+            f'{self.root}v1/directory/root',  
+            headers=ADMIN_HEADER,
+            timeout=self.timeout)
+        
+        if result.status_code == 401:
+            raise RestListError(result.content.decode('utf-8'))
         if result.status_code != 200:
             raise RestListError(f'Unexpected status code: {result.status_code}')
         return result.content.decode('utf-8')
 
-    def wipe(self):
-        '''Send request to remove all elements from the list'''
+    def get_dir_childs(self, dir_id, nombre_hijo):
+        result = requests.get(
+            f'{self.root}v1/directory/{dir_id}/{nombre_hijo}',  
+            headers=ADMIN_HEADER,
+            timeout=self.timeout)
+        
+        if result.status_code == 401 or result.status_code == 404:
+            raise RestListError(result.content.decode('utf-8'))           
+        if result.status_code != 200:
+            raise RestListError(f'Unexpected status code: {result.status_code}')
+        return result.content.decode('utf-8')
+    
+
+    def new_dir(self, dir_id, nombre_hijo):
+        '''Access to a item by its index'''
+        result = requests.put(
+            f'{self.root}v1/directory/{dir_id}/{nombre_hijo}',  
+            headers=ADMIN_HEADER,
+            timeout=self.timeout)
+        
+        if result.status_code == 401 or result.status_code == 404:
+            raise RestListError(result.content.decode('utf-8'))           
+        if result.status_code != 200:
+            raise RestListError(f'Unexpected status code: {result.status_code}')
+        return result.content.decode('utf-8')
+
+    def remove_dir(self, dir_id, nombre_hijo):
+        '''Access to a item by its index'''
         result = requests.delete(
-            f'{self.root}v1/elements',
-            timeout=self.timeout
-        )
+            f'{self.root}v1/directory/{dir_id}/{nombre_hijo}',  
+            headers=ADMIN_HEADER,
+            timeout=self.timeout)
+        
+        if result.status_code == 401 or result.status_code == 404:
+            raise RestListError(result.content.decode('utf-8'))           
         if result.status_code != 204:
             raise RestListError(f'Unexpected status code: {result.status_code}')
+        return result.content.decode('utf-8')
 
     def exists(self, element):
         '''Send request to check if an element exists in the list'''
@@ -82,8 +100,6 @@ class RestListClient:
         )
         return result.status_code == 204
 
-    def __contains__(self, element):
-        return self.exists(element)
 
     def remove(self, element, all_occurrences=False):
         '''Send request to remove an element from the list'''
@@ -133,34 +149,7 @@ class RestListClient:
     def __len__(self):
         return self.len()
 
-
-def main():
-    '''Entry point'''
-    client = RestListClient('http://127.0.0.1:5000/')
-    client.wipe()
-    ELEMENTO = 'pepe'
-    print('Insertamos "juan"')
-    client.append('juan')
-    print(f'Insertamos "{ELEMENTO}" 3 veces')
-    client.append(ELEMENTO)
-    client.append(ELEMENTO)
-    client.append(ELEMENTO)
-    print(f'Elementos "{ELEMENTO}": ', client.count(ELEMENTO))
-    print('Longitud de la lista: ', len(client))
-    print(f'Eliminamos un elemento "{ELEMENTO}"')
-    client.remove(ELEMENTO)
-    print(f'Elementos "{ELEMENTO}": ', client.count(ELEMENTO))
-    print('Longitud de la lista: ', len(client))
-    print(f'Eliminamos todos los elementos "{ELEMENTO}"')
-    client.remove(ELEMENTO, all_occurrences=True)
-    print(f'Elementos "{ELEMENTO}": ', client.count(ELEMENTO))
-    print('Longitud de la lista: ', len(client))
-    print(f'Elemento 0 de la lista: {client[0]}')
-    try:
-        print(f'Elemento 1 de la lista: {client[1]}')
-    except IndexError:
-        print('No se puede acceder al elemento 1 de la lista')
-
-
-if __name__ == '__main__':
-    main()
+if __name__=="__main__":
+    r=RestListClient(URI)
+    print(r.remove_dir("1", "pollaza"))
+   # print(r.new_dir("1","pollaza"))
