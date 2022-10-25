@@ -8,6 +8,7 @@ import sqlite3
 import uuid
 import json
 from collections import deque
+import os
 
 BD_PATH = "./db/data.db"
 ADMIN="admin"
@@ -123,7 +124,9 @@ class Directory:
         sql_sentence="SELECT * FROM directories WHERE uuid=?"
         cur.execute(sql_sentence,sql_data)
         if not cur.fetchall():
+            self.bd_con.close()
             return False
+        self.bd_con.close()
         return True
     
 
@@ -152,11 +155,12 @@ class Directory:
         cur.execute(sql_sentence, sql_data)
 
         uid = cur.fetchone()
+        self.bd_con.close()
+        
         if uid == None:
             return False
         
         uuid_dir = uid[0]
-        self.bd_con.close()
                 
         return str(uuid_dir)
 
@@ -180,7 +184,7 @@ class Directory:
         self.bd_con = sqlite3.connect(BD_PATH)
         cur = self.bd_con.cursor()
         
-        sql_data = (str(uuid))
+        sql_data = (str(uuid),)
         sql_sentence = ("SELECT tuples FROM directories WHERE uuid=?")
         
         cur.execute(sql_sentence, sql_data)
@@ -247,14 +251,17 @@ class Directory:
         dir_name=self._get_Name_dir(id)
         path = "" 
         listPath = deque()
-        listPath.append(dir_name)
+        listPath.append(dir_name) 
         while(dir_name != "/"):
             parent = self._get_UUID_parent(id)
             dir_name = self._get_Name_dir(parent)
             listPath.append(dir_name)
         
-        while(listPath.count()!= 0):
-            path += listPath.pop() + "/"
+        while(len(listPath)!= 0):
+            if dir_name =="/":
+                path+= listPath.pop()
+            else:
+                path += listPath.pop() + "/"
         
         return path
         
@@ -461,21 +468,25 @@ class Directory:
         self.bd_con.close()
         
     
-    def add_file(self, id, user, name, url):
+    def add_file(self, id, user, name, url=None):
+    
         '''Vacia la lista'''
         if not self._checkDirectory(id):
-            raise DirectoyException(f"Directory {id} doesn't exist")
+            raise DirectoyException(f"Directory {id} doesn't exist", DIR_NOTFOUND_ERR)
+            
+        if not url:
+            url=self._get_dirURL(id) +"/"+name
 
         has_permission = self._checkUser_Writeable(id, user)
         if not has_permission:
-            raise DirectoyException(f"{user} doens't have permissions writing permissions")    
+            raise DirectoyException(f"{user} doens't have permissions writing permissions", PERMISSION_ERR)    
 
         tuples_raw=self._get_dirFiles(id)
         tuples_list = json.loads(tuples_raw)
         print(tuples_list)
         for file_tuple in tuples_list:
             if name == file_tuple[0]:
-                raise DirectoyException(f"A file with the name {name} already exists")
+                raise DirectoyException(f"A file with the name {name} already exists", ALREADYEXISTS_ERR)
 
         tuples_list.append(tuple((name, url)))
         print(tuples_list)
@@ -484,7 +495,7 @@ class Directory:
         childs_list = json.loads(childs) 
         for child in childs_list:
             if name == self._get_Name_dir(child):
-                raise DirectoyException(f"A directory with the name {name} already exists")
+                raise DirectoyException(f"A directory with the name {name} already exists", ALREADYEXISTS_ERR)
         
         self.bd_con = sqlite3.connect(BD_PATH)
         cur = self.bd_con.cursor()
@@ -498,26 +509,31 @@ class Directory:
     
         self.bd_con.commit()
         self.bd_con.close()
+
+        return url
     
     
-    def remove_file(self, id, user, name, url):
+    def remove_file(self, id, user, name):
         '''Vacia la lista'''
         if not self._checkDirectory(id):
-            raise DirectoyException(f"Directory {id} doesn't exist")
+            raise DirectoyException(f"Directory {id} doesn't exist", DIR_NOTFOUND_ERR)
                    
         has_permission = self._checkUser_Writeable(id, user)
         if not has_permission:
-            raise DirectoyException(f"{user} doens't have permissions writing permissions")  
+            raise DirectoyException(f"{user} doens't have permissions writing permissions", PERMISSION_ERR)  
 
         tuples_raw=self._get_dirFiles(id)
         tuples_list = json.loads(tuples_raw)  
-        print(tuples_list)
-        for x in tuples_list:
-            if tuple((name, url)) != tuple(x): 
-                raise DirectoyException(f"A file with the name {name} doesn't exists") 
+
+        found=False
+       
         for file_tuple in tuples_list:
             if name == file_tuple[0]:
                 tuples_list.remove(file_tuple) 
+                found = True
+        
+        if not found:
+            raise DirectoyException(f"A file with the name {tuples_list} doesn't exists, {tuples_list}", DOESNOTEXIST_ERR) 
         
         self.bd_con = sqlite3.connect(BD_PATH)
         cur = self.bd_con.cursor()
@@ -534,6 +550,6 @@ class Directory:
 
 if __name__=="__main__":
     dirDB=Directory()
-    
+    dirDB.add_file(1,"admin","jose","/dick/cock")
    # dirDB.new_dir(1, "prueba", "admin")
     #dirDB.remove_dir(1, "prueba", "admin")
