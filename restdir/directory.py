@@ -10,7 +10,6 @@ import json
 from collections import deque
 import os
 
-BD_PATH = "./db/data.db"
 ADMIN="admin"
 
 
@@ -32,9 +31,10 @@ class DirectoyException(Exception):
 class Directory:
     '''Implementa todas las operaciones sobre un objeto tipo Dir()'''
 
-    def __init__(self):
+    def __init__(self, bd_path):
+        self.BD_PATH = bd_path
         try:
-            self.bd_con = sqlite3.connect(BD_PATH)
+            self.bd_con = sqlite3.connect(self.BD_PATH)
             cur = self.bd_con.cursor()
             cur.execute("CREATE TABLE IF NOT EXISTS directories(uuid text PRIMARY KEY, uuid_parent text, name text, childs text [], tuples text [], readable_by text [], writeable_by text [])")  
             cur.execute("SELECT * FROM directories")   
@@ -48,7 +48,7 @@ class Directory:
         
         
     def init_root(self): 
-        self.bd_con = sqlite3.connect(BD_PATH)
+        self.bd_con = sqlite3.connect(self.BD_PATH)
         cur = self.bd_con.cursor()
    
         id=1
@@ -77,7 +77,7 @@ class Directory:
     def _checkUser_Writeable(self, id_dir, user):
 
         '''Comprueba si el user esta en writeable_by'''
-        self.bd_con = sqlite3.connect(BD_PATH)
+        self.bd_con = sqlite3.connect(self.BD_PATH)
         cur = self.bd_con.cursor()
     
         sql_data = (id_dir,)
@@ -98,7 +98,7 @@ class Directory:
 
     def _checkUser_Readable(self, id_dir, user):  
         '''Comprueba si el user esta en writeable_by'''
-        self.bd_con = sqlite3.connect(BD_PATH)
+        self.bd_con = sqlite3.connect(self.BD_PATH)
         cur = self.bd_con.cursor()
     
         sql_data = (id_dir,)
@@ -118,7 +118,7 @@ class Directory:
 
 
     def _checkDirectory(self, uuid):
-        self.bd_con = sqlite3.connect(BD_PATH)
+        self.bd_con = sqlite3.connect(self.BD_PATH)
         cur = self.bd_con.cursor()
         sql_data = (uuid,)
         sql_sentence="SELECT * FROM directories WHERE uuid=?"
@@ -132,7 +132,7 @@ class Directory:
 
     def _get_Name_dir(self, id):
         '''obtener UUID de un dir'''
-        self.bd_con = sqlite3.connect(BD_PATH)
+        self.bd_con = sqlite3.connect(self.BD_PATH)
         cur = self.bd_con.cursor()
         
         sql_data = (id,)
@@ -147,7 +147,7 @@ class Directory:
 
     def _get_UUID_dir(self, uuid_parent, name):
         '''obtener UUID de un dir'''
-        self.bd_con = sqlite3.connect(BD_PATH)
+        self.bd_con = sqlite3.connect(self.BD_PATH)
         cur = self.bd_con.cursor()
         
         sql_data = (uuid_parent, name)
@@ -166,7 +166,7 @@ class Directory:
 
 
     def _get_dirChilds(self, uuid):
-        self.bd_con = sqlite3.connect(BD_PATH)
+        self.bd_con = sqlite3.connect(self.BD_PATH)
         cur = self.bd_con.cursor()
         sql_data = (str(uuid),)
         sql_sentence = ("SELECT childs FROM directories WHERE uuid=?")
@@ -181,7 +181,7 @@ class Directory:
 
 
     def _get_dirFiles(self, uuid):
-        self.bd_con = sqlite3.connect(BD_PATH)
+        self.bd_con = sqlite3.connect(self.BD_PATH)
         cur = self.bd_con.cursor()
         
         sql_data = (str(uuid),)
@@ -198,7 +198,7 @@ class Directory:
 
     def _get_writeableBy(self, id):
         '''Comprueba si el user esta en writeable_by'''
-        self.bd_con = sqlite3.connect(BD_PATH)
+        self.bd_con = sqlite3.connect(self.BD_PATH)
         cur = self.bd_con.cursor()
     
         sql_data = (id,)
@@ -216,7 +216,7 @@ class Directory:
 
     def _get_UUID_parent(self, id):
         '''obtener UUID de un dir'''
-        self.bd_con = sqlite3.connect(BD_PATH)
+        self.bd_con = sqlite3.connect(self.BD_PATH)
         cur = self.bd_con.cursor()
         
         sql_data = (id,)
@@ -231,7 +231,7 @@ class Directory:
 
     def _get_readableBy(self, id):
         '''Comprueba si el user esta en readable_by'''
-        self.bd_con = sqlite3.connect(BD_PATH)
+        self.bd_con = sqlite3.connect(self.BD_PATH)
         cur = self.bd_con.cursor()
     
         sql_data = (id,)
@@ -290,7 +290,7 @@ class Directory:
         childs_list.append(new_child)
         childs_str = json.dumps(childs_list)
         
-        self.bd_con = sqlite3.connect(BD_PATH)
+        self.bd_con = sqlite3.connect(self.BD_PATH)
         cur = self.bd_con.cursor()
 
         sql_data3 =(childs_str, uuid_parent)
@@ -342,7 +342,7 @@ class Directory:
         if not has_permission:
                 raise DirectoyException(f"User {user} doesn't have writing permissions", PERMISSION_ERR)
         
-        self.bd_con = sqlite3.connect(BD_PATH)
+        self.bd_con = sqlite3.connect(self.BD_PATH)
         cur = self.bd_con.cursor()
         
         '''Eliminar este directorio del array de hijos del padre'''
@@ -374,7 +374,7 @@ class Directory:
         readers.append(user)
         readers_str=json.dumps(readers)
         
-        self.bd_con = sqlite3.connect(BD_PATH)
+        self.bd_con = sqlite3.connect(self.BD_PATH)
         cur = self.bd_con.cursor()
         sql_data=(readers_str, id,)
         sql_sentence=("UPDATE directories SET readable_by=? WHERE uuid=?")
@@ -400,7 +400,7 @@ class Directory:
         elif user==ADMIN:
             raise DirectoyException(f'Error while removing user writable, ADMIN user is UNALTERABLE')
 
-        self.bd_con = sqlite3.connect(BD_PATH)
+        self.bd_con = sqlite3.connect(self.BD_PATH)
         cur = self.bd_con.cursor()
         readers.remove(user)
         readers_str=json.dumps(readers)
@@ -427,7 +427,7 @@ class Directory:
         writers.append(user)
         writers_str=json.dumps(writers)
         
-        self.bd_con = sqlite3.connect(BD_PATH)
+        self.bd_con = sqlite3.connect(self.BD_PATH)
         cur = self.bd_con.cursor()
         sql_data=(writers_str, id,)
         sql_sentence=("UPDATE directories SET writeable_by=? WHERE uuid=?")
@@ -454,7 +454,7 @@ class Directory:
         elif user==ADMIN:
             raise DirectoyException(f'Error while removing user writeable, ADMIN user is UNALTERABLE')
         
-        self.bd_con = sqlite3.connect(BD_PATH)
+        self.bd_con = sqlite3.connect(self.BD_PATH)
         cur = self.bd_con.cursor()
         writers.remove(user)
         writers_str=json.dumps(writers)
@@ -497,7 +497,7 @@ class Directory:
             if name == self._get_Name_dir(child):
                 raise DirectoyException(f"A directory with the name {name} already exists", ALREADYEXISTS_ERR)
         
-        self.bd_con = sqlite3.connect(BD_PATH)
+        self.bd_con = sqlite3.connect(self.BD_PATH)
         cur = self.bd_con.cursor()
             
         tuples_str = json.dumps(tuples_list)
@@ -535,7 +535,7 @@ class Directory:
         if not found:
             raise DirectoyException(f"A file with the name {tuples_list} doesn't exists, {tuples_list}", DOESNOTEXIST_ERR) 
         
-        self.bd_con = sqlite3.connect(BD_PATH)
+        self.bd_con = sqlite3.connect(self.BD_PATH)
         cur = self.bd_con.cursor()
             
         tuples_str = json.dumps(tuples_list)

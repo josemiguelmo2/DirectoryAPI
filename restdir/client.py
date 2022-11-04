@@ -48,7 +48,7 @@ class RestListClient:
             raise DirectoryException(f'Unexpected status code: {result.status_code}')
         return result.content.decode('utf-8')
 
-    def get_dir_childs(self, dir_id, nombre_hijo):
+    def get_dir_childs(self, dir_id, nombre_hijo): #esta esta mal
         result = requests.get(
             f'{self.root}v1/directory/{dir_id}/{nombre_hijo}',  
             headers=ADMIN_HEADER,
