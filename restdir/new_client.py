@@ -8,7 +8,7 @@ HEADERS = {"content-type": "application/json"}
 token='1234'
 ADMIN_HEADER = {"admin-token": "admin"}
 USER_HEADER = {"user-token": ""}
-URI = "http://127.0.0.1:5000"
+ROOT_ID="root"
 
 class DirectoryException(Exception):
     '''Error caused by wrong responses from server'''
@@ -20,35 +20,38 @@ class DirectoryException(Exception):
 
 class DirectoryService:
     '''Cliente de acceso al servicio de directorio'''
+    def __init__(self, uri):
+        self.uri = uri
 
     def get_root(self, user):
         '''Obtiene el directorio raiz'''
         
         USER_HEADER['user-token'] = user
-        return Directory(URI,user)
-
-
+        return Directory(self.uri, user, ROOT_ID)
+       
 
 class Directory:
     '''Cliente de acceso a un directorio'''
-    def __init__(self, uri, user, timeout=120):
+    def __init__(self, uri, user, dir_id, timeout=120):
         '''uri should be the root of the API,
             example: http://127.0.0.1:5000/
         '''
         self.root = uri
         if not self.root.endswith('/'):
             self.root = f'{self.root}/'
-        self.timeout = timeout
-
-        root_info=self.getRoot()        
+        self.timeout = timeout  
         
-        self.id = root_info['dir_id']
-        self.childs = root_info['childs']
+        self.id = dir_id
         self.actual_user = user
+        self.childs = ""
+        self.id_parent = ""
+
+        print(self.self_info())
         
-    def getRoot(self):
+    def self_info(self):
+        dir_id=self.id
         result = requests.get(
-            f'{self.root}v1/directory/root',  
+            f'{self.root}v1/directory/{dir_id}',  
             headers=ADMIN_HEADER,
             timeout=self.timeout)
 
@@ -56,15 +59,15 @@ class Directory:
             raise DirectoryException(result.content.decode('utf-8'))           
         if result.status_code != 200:
             raise DirectoryException(f'Unexpected status code: {result.status_code}')
-         
-        rootInfo = json.loads(result.content.decode('utf-8'))
-        return rootInfo
+              
+        info=result.content.decode('utf-8')
+        info_list=json.loads(info)
         
-
-    def list_directories(self):
+        return info_list
+        
+    def list_directories(self, nombre_hijo):
         '''Obtiene una lista de todos los subdirectorios del directorio''' 
         dir_id = self.id_parent
-        nombre_hijo=self.name_dir
 
         result = requests.get(
             f'{self.root}v1/directory/{dir_id}/{nombre_hijo}',  
@@ -76,7 +79,6 @@ class Directory:
         if result.status_code != 200:
             raise DirectoryException(f'Unexpected status code: {result.status_code}')
         return result.content.decode('utf-8')
-
 
     def new_directory(self, directory_name):
         '''Crea un nuevo subdirectorio en el directorio'''
@@ -104,8 +106,7 @@ class Directory:
             raise DirectoryException(result.content.decode('utf-8'))           
         if result.status_code != 204:
             raise DirectoryException(f'Unexpected status code: {result.status_code}')
-        return result.content.decode('utf-8')
-        
+        return result.content.decode('utf-8') 
 
     def list_files(self):
         '''Obtiene una lista de ficheros del directorio'''
@@ -121,11 +122,11 @@ class Directory:
             raise DirectoryException(f'Unexpected status code: {result.status_code}')
         return result.content.decode('utf-8')
 
-
-    def new_file(self, filename, blob_id):
+    def new_file(self, filename, file_url):
         '''Crea un nuevo fichero a partir de un blob'''
         result = requests.put(
             f'{self.root}v1/files/{self.id}/{filename}',
+            data=file_url,
             headers=ADMIN_HEADER,
             timeout=self.timeout)
         
@@ -149,19 +150,3 @@ class Directory:
         if result.status_code != 204:
             raise DirectoryException(f'Unexpected status code: {result.status_code}')
 
-
-    def add_read_permission_to(self, user):
-        '''Permite al usuario dado leer el blob'''
-        raise NotImplementedError()
-
-    def revoke_read_permission_to(self, user):
-        '''Elimina al usuario dado de la lista de permiso de lectura'''
-        raise NotImplementedError()
-
-    def add_write_permission_to(self, user):
-        '''Permite al usuario dado escribir el blob'''
-        raise NotImplementedError()
-
-    def revoke_write_permission_to(self, user):
-        '''Elimina al usuario dado de la lista de permiso de escritura'''
-        raise NotImplementedError()
