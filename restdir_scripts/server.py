@@ -9,7 +9,7 @@ import uuid
 import os
 from flask import Flask
 from restdir.directory import Directory
-from restdir.server import Server
+from restdir.server import server
 from restdir.auth import AuthService
 
 
@@ -35,13 +35,13 @@ def main():
     auth_serv=AuthService(args.pos_arg)
     try:
         auth_serv.administrator_login(args.admin) #si no es admin salta error
-    except Exception as e:
+    except Exception:
         print("El token de admin es erroneo")
         sys.exit()
     
     app = Flask("restdir")
     DIR = Directory(args.db, args.admin) 
-    Server(app, DIR)
+    server(app, DIR)
     app.run(host=args.listening, port=args.port, debug=True)
 
 

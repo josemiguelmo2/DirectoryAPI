@@ -5,8 +5,7 @@
 '''
 
 
-from restdir.new_client import DirectoryService
-from restdir.directory import Directory
+from restdir.client import DirectoryService
 
 URI = "http://127.0.0.1:3002"
 

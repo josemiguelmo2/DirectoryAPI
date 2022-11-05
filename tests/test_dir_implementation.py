@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
-
+from flask import Flask
 import unittest, json
 import restdir.directory as rd
-from restdir.server import Server
-from restdir.new_client import DirectoryService
+from restdir.server import server
+from restdir.client import DirectoryService,DirectoryException
+import threading
 BD_PATH="./db/data.db"
 ADMIN="1234"
 ROOT_ID="root"
+
+URI = "http://127.0.0.1:3002"
 
 class TestDirImplementation(unittest.TestCase):
 
@@ -111,3 +114,15 @@ class TestDirImplementation(unittest.TestCase):
         mydir.remove_file(id, user, name)
         len_aft = len(json.loads(mydir._get_dirFiles(id)))
         self.assertEqual(len_aft, len_bef-1)
+    
+
+    def test_server_info(self):
+        #app = Flask("test-suite")
+        # DIR = rd.Directory(BD_PATH, ADMIN) 
+        # server(app, DIR)
+        # app.run(host="0.0.0.0", port=3002, debug=True)
+        # t1=threading.Thread(target=app.run,kwargs={'host':"0.0.0.0", 'port':3002, 'debug':True})
+        # t1.run()
+        dir=DirectoryService(URI)
+        self.assertRaises(DirectoryException,dir.get_root,"spoofer")
+        #  t1.setDaemon(True)
