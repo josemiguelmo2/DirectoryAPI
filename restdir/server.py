@@ -24,7 +24,7 @@ def server(app, dir):
 
         if "admin-token" not in headers:
             token = headers["user-token"]
-            has_permission = dir._checkUser_Readable(id, token)
+            has_permission = dir._checkUser_Readable(dir_id, token)
             if not has_permission:
                 return make_response(f"User {token} has no readable permission", 401)
 

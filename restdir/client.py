@@ -3,10 +3,9 @@
 """
 import requests
 import json
-
+from restdir.auth import AuthService
 HEADERS = {"content-type": "application/json"}
-token = "1234"
-ADMIN_HEADER = {"admin-token": "admin"}
+ADMIN_HEADER = {"admin-token": ""}
 USER_HEADER = {"user-token": ""}
 ROOT_ID = "root"
 
@@ -24,20 +23,27 @@ class DirectoryException(Exception):
 class DirectoryService:
     """Cliente de acceso al servicio de directorio"""
 
-    def __init__(self, uri):
-        self.uri = uri
+    def __init__(self, uri_dir, uri_auth):
+        self.uri_dir = uri_dir
+        self.uri_auth = uri_auth
 
     def get_root(self, user):
         """Obtiene el directorio raiz"""
 
-        USER_HEADER["user-token"] = user
-        return Directory(self.uri, user, ROOT_ID)
+        AuthServer=AuthService(self.uri_auth)
+        try: 
+            if AuthServer.administrator_login(user):
+                ADMIN_HEADER['admin-token'] = user
+                return Directory(self.uri_dir, ADMIN_HEADER, ROOT_ID)
+        except Exception:
+            USER_HEADER["user-token"] = user
+            return Directory(self.uri_dir, USER_HEADER, ROOT_ID)
 
 
 class Directory:
     """Cliente de acceso a un directorio"""
 
-    def __init__(self, uri, user, dir_id, timeout=120):
+    def __init__(self, uri, header, dir_id, timeout=120):
         """uri should be the root of the API,
         example: http://127.0.0.1:5000/
         """
@@ -47,7 +53,7 @@ class Directory:
         self.timeout = timeout
 
         self.id = dir_id
-        self.actual_user = user
+        self.header = header
         self.childs = ""
         self.id_parent = ""
 
@@ -57,7 +63,7 @@ class Directory:
         dir_id = self.id
         result = requests.get(
             f"{self.root}v1/directory/{dir_id}",
-            headers=USER_HEADER,
+            headers=self.header,
             timeout=self.timeout,
         )
 
@@ -67,9 +73,8 @@ class Directory:
             raise DirectoryException(f"Unexpected status code: {result.status_code}")
 
         info = result.content.decode("utf-8")
-        info_list = json.loads(info)
 
-        return info_list
+        return info
 
     def list_directories(self, nombre_hijo):
         """Obtiene una lista de todos los subdirectorios del directorio"""
@@ -77,7 +82,7 @@ class Directory:
 
         result = requests.get(
             f"{self.root}v1/directory/{dir_id}/{nombre_hijo}",
-            headers=ADMIN_HEADER,
+            headers=self.header,
             timeout=self.timeout,
         )
 
@@ -93,7 +98,7 @@ class Directory:
         nombre_hijo = directory_name
         result = requests.put(
             f"{self.root}v1/directory/{dir_id}/{nombre_hijo}",
-            headers=ADMIN_HEADER,
+            headers=self.header,
             timeout=self.timeout,
         )
 
@@ -111,7 +116,7 @@ class Directory:
         """Elimina un subdirectorio del directorio"""
         result = requests.delete(
             f"{self.root}v1/directory/{self.id}/{directory_name}",
-            headers=ADMIN_HEADER,
+            headers=self.header,
             timeout=self.timeout,
         )
 
@@ -125,7 +130,9 @@ class Directory:
         """Obtiene una lista de ficheros del directorio"""
         dir_id = self.id
         result = requests.get(
-            f"{self.root}v1/files/{dir_id}", headers=ADMIN_HEADER, timeout=self.timeout
+            f"{self.root}v1/files/{dir_id}", 
+            headers=self.header, 
+            timeout=self.timeout
         )
 
         if result.status_code == 401 or result.status_code == 404:
@@ -139,7 +146,7 @@ class Directory:
         result = requests.put(
             f"{self.root}v1/files/{self.id}/{filename}",
             data=file_url,
-            headers=ADMIN_HEADER,
+            headers=self.header,
             timeout=self.timeout,
         )
 
@@ -158,7 +165,7 @@ class Directory:
         dir_id = self.id
         result = requests.delete(
             f"{self.root}v1/files/{dir_id}/{filename}",
-            headers=ADMIN_HEADER,
+            headers=self.header,
             timeout=self.timeout,
         )
 

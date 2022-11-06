@@ -1,7 +1,7 @@
 '''
     Interfaces para el acceso a la API rest del servicio de autenticacion
 '''
-ADMIN_TOKEN = "1234"
+ADMIN_TOKEN = "admin"
 
 class Administrator:
     '''Cliente de autenticacion como administrador'''
@@ -24,6 +24,9 @@ class Administrator:
 
 class User:
     '''Cliente de autenticacion como usuario'''
+    def __init__(self, username, password):
+        self.username = username
+        self.password = password
 
     def set_new_password(self, new_password):
         '''Cambia la contraseña del usuario'''
@@ -32,18 +35,18 @@ class User:
     @property
     def token(self):
         '''Retorna el token del usuario'''
-        raise NotImplementedError()
+        if self.username == "admin":
+            return "admin"
 
 
 class AuthService:
     '''Cliente de acceso al servicio de autenticacion'''
     def __init__(self, url):
         self.url = url
-        self.Administrador = Administrator(ADMIN_TOKEN)
 
     def user_of_token(self, token):
         '''Return username of the given token or error'''
-        if token == 1234:
+        if token == ADMIN_TOKEN:
             return "admin"   
 
     def exists_user(self, username):
@@ -52,12 +55,12 @@ class AuthService:
 
     def administrator_login(self, token):
         '''Return Adminitrator() object or error'''
-        if token == self.Administrador.token:
-            return self.Administrador
+        if token == ADMIN_TOKEN:
+            return Administrator(ADMIN_TOKEN)
         else:
-            raise Exception()
+            raise Exception
 
     def user_login(self, username, password):
         '''Return User() object or error'''
-        raise NotImplementedError()
+        return User(username, password)
 

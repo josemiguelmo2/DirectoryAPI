@@ -9,8 +9,6 @@ import uuid
 import json
 from collections import deque
 
-ADMIN = "admin"
-
 
 PERMISSION_ERR = 0
 DIR_NOTFOUND_ERR = 1
@@ -62,8 +60,8 @@ class Directory:
         writeable_by = list()
         files = list()
         childs = list()
-        readable_by.append(ADMIN)
-        writeable_by.append(ADMIN)
+        readable_by.append(self.admin)
+        writeable_by.append(self.admin)
 
         readable_by_str = json.dumps(readable_by)
         writeable_by_str = json.dumps(writeable_by)
@@ -424,9 +422,9 @@ class Directory:
             raise DirectoyException(
                 f"Error while removing user writable, user {user} not in writable_by list"
             )
-        elif user == ADMIN:
+        elif user == self.admin:
             raise DirectoyException(
-                f"Error while removing user writable, ADMIN user is UNALTERABLE"
+                f"Error while removing user writable, admin user is UNALTERABLE"
             )
 
         self.bd_con = sqlite3.connect(self.BD_PATH)
@@ -494,9 +492,9 @@ class Directory:
                 f"Error while removing user writeable, user {user} not in writeable_by list"
             )
 
-        elif user == ADMIN:
+        elif user == self.admin:
             raise DirectoyException(
-                f"Error while removing user writeable, ADMIN user is UNALTERABLE"
+                f"Error while removing user writeable, self.admin user is UNALTERABLE"
             )
 
         self.bd_con = sqlite3.connect(self.BD_PATH)
