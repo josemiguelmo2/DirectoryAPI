@@ -37,7 +37,7 @@ def main():
         auth_serv.administrator_login(args.admin) #si no es admin salta error
     except Exception:
         print("El token de admin es erroneo")
-        sys.exit()
+        sys.exit(1)
     
     app = Flask("restdir")
     DIR = Directory(args.db, args.admin) 

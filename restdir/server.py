@@ -17,28 +17,23 @@ def server(app, dir):
     @app.route("/v1/directory/<dir_id>", methods=["GET"])
     def dir_info(dir_id):
         """Añadir elemento a lista"""
-
         headers = request.headers
         if "admin-token" not in headers and "user-token" not in headers:
             return make_response(f"Bad headers", 401)
 
         if "admin-token" not in headers:
             token = headers["user-token"]
-            has_permission = dir._checkUser_Readable(dir_id, token)
-            if not has_permission:
-                return make_response(f"User {token} has no readable permission", 401)
-
-        # falta capturar excepcion si id no existe
-        childs = dir._get_dirChilds(dir_id)
-        parent = dir._get_UUID_parent(dir_id)
-        childs_list = json.loads(childs)
-
-        names_childs = list()
-
-        for child in childs_list:
-            names_childs.append(dir._get_Name_dir(child))
-
-        response = {"dir_id": dir_id, "childs": names_childs, "parent": parent}
+        else:
+            token = headers["admin-token"]
+            
+        try:
+            parent, names_childs = dir.get_dir_info(dir_id, token)
+            response = {"dir_id": dir_id, "childs": names_childs, "parent": parent}
+        except DirectoyException as err:
+            if err.code == PERMISSION_ERR:
+                return make_response(err.msg, 401)
+            if err.code == DIR_NOTFOUND_ERR:
+                return make_response(err.msg, 404)        
 
         return make_response(json.dumps(response), 200)
 
@@ -50,26 +45,19 @@ def server(app, dir):
         if "admin-token" not in headers and "user-token" not in headers:
             return make_response(f"Bad headers", 401)
 
-        if not dir._checkDirectory(dir_id):
-            return make_response(f"Directory {dir_id} does not exist", 404)
-
-        id = dir._get_UUID_dir(dir_id, nombre_hijo)
-
-        if not id:
-            return make_response(
-                f"Directory {dir_id} does not have {nombre_hijo} as child", 404
-            )
-
         if "admin-token" not in headers:
             token = headers["user-token"]
-            has_permission = dir._checkUser_Readable(id, token)
-            if not has_permission:
-                return make_response(f"User {token} has no readable permission", 401)
+        else:
+            token = headers["admin-token"]
 
-        childs = dir._get_dirChilds(id)
-        childs_list = json.loads(childs)
-
-        response = {"childs_ids": childs_list}
+        try:
+            childs_list = dir.get_dir_childs(dir_id, nombre_hijo, token)
+            response = {"childs_ids": childs_list}
+        except DirectoyException as err:
+            if err.code == PERMISSION_ERR:
+                return make_response(err.msg, 401)
+            if err.code == DIR_NOTFOUND_ERR:
+                return make_response(err.msg, 404)    
 
         return make_response(json.dumps(response), 200)
 
@@ -116,7 +104,6 @@ def server(app, dir):
         try:
             dir.remove_dir(dir_id, nombre_hijo, token)
             response = ""
-
         except DirectoyException as err:
             if err.code == PERMISSION_ERR:
                 return make_response(err.msg, 401)
@@ -133,22 +120,19 @@ def server(app, dir):
         if "admin-token" not in headers and "user-token" not in headers:
             return make_response(f"Bad headers", 401)
 
-        if not dir._checkDirectory(dir_id):
-            return make_response(f"Directory {dir_id} does not exist", 404)
-
         if "admin-token" not in headers:
             token = headers["user-token"]
-            has_permission = dir._checkUser_Readable(dir_id, token)
-            if not has_permission:
-                return make_response(f"User {token} has no readable permission", 401)
+        else:
+            token = headers["admin-token"]
 
-        files = dir._get_dirFiles(dir_id)
-        files_list = json.loads(files)
-        names = list()
-        for x in files_list:
-            names.append(x[0])
-
-        response = {"files": names}
+        try:
+            names = dir.get_dir_files(dir_id, token)
+            response = {"files": names}
+        except DirectoyException as err:
+            if err.code == PERMISSION_ERR:
+                return make_response(err.msg, 401)
+            if err.code == DIR_NOTFOUND_ERR:
+                return make_response(err.msg, 404)  
 
         return make_response(json.dumps(response), 200)
 
@@ -158,22 +142,19 @@ def server(app, dir):
         if "admin-token" not in headers and "user-token" not in headers:
             return make_response(f"Bad headers", 401)
 
-        if not dir._checkDirectory(dir_id):
-            return make_response(f"Directory {dir_id} does not exist", 404)
-
         if "admin-token" not in headers:
             token = headers["user-token"]
-            has_permission = dir._checkUser_Readable(dir_id, token)
-            if not has_permission:
-                return make_response(f"User {token} has no readable permission", 401)
+        else:
+            token = headers["admin-token"]
 
-        url = ""
-        files = json.loads(dir._get_dirFiles(dir_id))
-
-        for x in files:
-            if x[0] == filename:
-                url = x[1]
-
+        try:
+            url = dir.get_file_url(dir_id, filename, token)
+        except DirectoyException as err:
+            if err.code == PERMISSION_ERR:
+                return make_response(err.msg, 401)
+            if err.code == DIR_NOTFOUND_ERR:
+                return make_response(err.msg, 404)          
+        
         return make_response(str(url), 200)
 
     @app.route("/v1/files/<dir_id>/<filename>", methods=["PUT"])

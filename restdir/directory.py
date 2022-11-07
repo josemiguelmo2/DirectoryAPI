@@ -126,12 +126,13 @@ class Directory:
     def _checkDirectory(self, uuid):
         self.bd_con = sqlite3.connect(self.BD_PATH)
         cur = self.bd_con.cursor()
-        sql_data = (uuid,)
-        sql_sentence = "SELECT * FROM directories WHERE uuid=?"
-        cur.execute(sql_sentence, sql_data)
-        if not cur.fetchall():
-            self.bd_con.close()
-            return False
+        if uuid != "0":
+            sql_data = (uuid,)
+            sql_sentence = "SELECT * FROM directories WHERE uuid=?"
+            cur.execute(sql_sentence, sql_data)
+            if not cur.fetchall():
+                self.bd_con.close()
+                return False
         self.bd_con.close()
         return True
 
@@ -331,6 +332,95 @@ class Directory:
 
         self.bd_con.commit()
         self.bd_con.close()
+
+    def get_dir_info(self, id, user):
+        if not self._checkDirectory(id):
+            raise DirectoyException(
+                f"Directory {id} doesn't exist", DIR_NOTFOUND_ERR
+            )
+
+        has_permission = self._checkUser_Readable(id, user)
+        if not has_permission:
+            raise DirectoyException(
+                f"User {user} doesn't have readable permissions", PERMISSION_ERR
+            )
+
+        childs = self._get_dirChilds(id)
+        parent = self._get_UUID_parent(id)
+        childs_list = json.loads(childs)
+
+        names_childs = list()
+
+        for child in childs_list:
+            names_childs.append(self._get_Name_dir(child))
+
+        return parent, names_childs
+
+    def get_dir_childs(self, uuid_parent, name, user):
+
+        if not self._checkDirectory(uuid_parent):
+            raise DirectoyException(
+                f"Directory {uuid_parent} doesn't exist", DIR_NOTFOUND_ERR
+            )
+
+        id = self._get_UUID_dir(uuid_parent, name)
+
+        if not id:
+            raise DirectoyException(
+                f"Directory {id} does not have {name} as child", DIR_NOTFOUND_ERR
+            )
+
+        has_permission = self._checkUser_Readable(id, user)
+        if not has_permission:
+            raise DirectoyException(
+                f"User {user} doesn't have readable permissions", PERMISSION_ERR
+            )
+
+        childs = self._get_dirChilds(id)
+        childs_list = json.loads(childs)
+
+        return childs_list
+
+    def get_dir_files(self, id, user):
+        if not self._checkDirectory(id):
+            raise DirectoyException(
+                f"Directory {id} doesn't exist", DIR_NOTFOUND_ERR
+            )
+
+        has_permission = self._checkUser_Readable(id, user)
+        if not has_permission:
+            raise DirectoyException(
+                f"User {user} doesn't have readable permissions", PERMISSION_ERR
+            )
+
+        files = self._get_dirFiles(id)
+        files_list = json.loads(files)
+        names = list()
+        for x in files_list:
+            names.append(x[0])
+
+        return names
+
+    def get_file_url(self, id, filename, user):
+        if not self._checkDirectory(id):
+            raise DirectoyException(
+                f"Directory {id} doesn't exist", DIR_NOTFOUND_ERR
+            )
+
+        has_permission = self._checkUser_Readable(id, user)
+        if not has_permission:
+            raise DirectoyException(
+                f"User {user} doesn't have readable permissions", PERMISSION_ERR
+            )
+
+        url = ""
+        files = json.loads(self._get_dirFiles(id))
+
+        for x in files:
+            if x[0] == filename:
+                url = x[1]
+
+        return url
 
     def remove_dir(self, uuid_parent, name, user):
         """Elimina un directorio de la BD"""
