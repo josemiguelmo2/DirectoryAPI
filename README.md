@@ -1,5 +1,9 @@
 # Ejemplo de API REST
 
+
+José Miguel Moreno García
+Rosa Alvarez Valero
+
 Demostración para **Python 3** de API REST creando un servidor con Flask y un cliente con requests.
 
 Crear un entorno virtual y activarlo:
@@ -21,10 +25,10 @@ tox
 
 Se puede lanzar en un terminal el servidor:
 ```shell
-python3 -m restlist_scripts.server
+python3 ./restdir_scripts/server.py <url_auth> -a <admin_token> -p  <puerto> -l <listening_addr> -d <db_path>
 ```
 
 Y en otro el cliente (que ejecuta código de prueba):
 ```shell
-python3 -m restlist_scripts.client
+python3 ./restdir_scripts/client.py
 ```
