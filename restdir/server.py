@@ -3,9 +3,9 @@
 """
     Implementacion ejemplo de servidor y servicio REST
 """
-from flask import Flask, make_response, request
+from flask import make_response, request
 import json
-from restdir.directory import Directory, DirectoyException
+from restdir.directory import DirectoyException
 
 PERMISSION_ERR = 0
 DIR_NOTFOUND_ERR = 1
@@ -13,7 +13,7 @@ ALREADYEXISTS_ERR = 2
 DOESNOTEXIST_ERR = 3
 
 
-def server(app, dir):
+def server(app, directory):
     @app.route("/v1/directory/<dir_id>", methods=["GET"])
     def dir_info(dir_id):
         """Añadir elemento a lista"""
@@ -25,15 +25,15 @@ def server(app, dir):
             token = headers["user-token"]
         else:
             token = headers["admin-token"]
-            
+
         try:
-            parent, names_childs = dir.get_dir_info(dir_id, token)
+            parent, names_childs = directory.get_dir_info(dir_id, token)
             response = {"dir_id": dir_id, "childs": names_childs, "parent": parent}
         except DirectoyException as err:
             if err.code == PERMISSION_ERR:
                 return make_response(err.msg, 401)
             if err.code == DIR_NOTFOUND_ERR:
-                return make_response(err.msg, 404)        
+                return make_response(err.msg, 404)
 
         return make_response(json.dumps(response), 200)
 
@@ -51,13 +51,13 @@ def server(app, dir):
             token = headers["admin-token"]
 
         try:
-            childs_list = dir.get_dir_childs(dir_id, nombre_hijo, token)
+            childs_list = directory.get_dir_childs(dir_id, nombre_hijo, token)
             response = {"childs_ids": childs_list}
         except DirectoyException as err:
             if err.code == PERMISSION_ERR:
                 return make_response(err.msg, 401)
             if err.code == DIR_NOTFOUND_ERR:
-                return make_response(err.msg, 404)    
+                return make_response(err.msg, 404)
 
         return make_response(json.dumps(response), 200)
 
@@ -75,9 +75,9 @@ def server(app, dir):
             token = headers["admin-token"]
 
         try:
-            dir.new_dir(dir_id, nombre_hijo, token)
-            id = dir._get_UUID_dir(dir_id, nombre_hijo)
-            response = {"dir_id": id}
+            directory.new_dir(dir_id, nombre_hijo, token)
+            id_dir = directory._get_UUID_dir(dir_id, nombre_hijo)
+            response = {"dir_id": id_dir}
         except DirectoyException as err:
             if err.code == PERMISSION_ERR:
                 return make_response(err.msg, 401)
@@ -102,7 +102,7 @@ def server(app, dir):
             token = headers["admin-token"]
 
         try:
-            dir.remove_dir(dir_id, nombre_hijo, token)
+            directory.remove_dir(dir_id, nombre_hijo, token)
             response = ""
         except DirectoyException as err:
             if err.code == PERMISSION_ERR:
@@ -126,13 +126,13 @@ def server(app, dir):
             token = headers["admin-token"]
 
         try:
-            names = dir.get_dir_files(dir_id, token)
+            names = directory.get_dir_files(dir_id, token)
             response = {"files": names}
         except DirectoyException as err:
             if err.code == PERMISSION_ERR:
                 return make_response(err.msg, 401)
             if err.code == DIR_NOTFOUND_ERR:
-                return make_response(err.msg, 404)  
+                return make_response(err.msg, 404)
 
         return make_response(json.dumps(response), 200)
 
@@ -148,13 +148,13 @@ def server(app, dir):
             token = headers["admin-token"]
 
         try:
-            url = dir.get_file_url(dir_id, filename, token)
+            url = directory.get_file_url(dir_id, filename, token)
         except DirectoyException as err:
             if err.code == PERMISSION_ERR:
                 return make_response(err.msg, 401)
             if err.code == DIR_NOTFOUND_ERR:
-                return make_response(err.msg, 404)          
-        
+                return make_response(err.msg, 404)
+
         return make_response(str(url), 200)
 
     @app.route("/v1/files/<dir_id>/<filename>", methods=["PUT"])
@@ -170,7 +170,7 @@ def server(app, dir):
             token = headers["admin-token"]
 
         try:
-            url = dir.add_file(dir_id, token, filename, url)
+            url = directory.add_file(dir_id, token, filename, url)
             response = {"URL": url}
             return make_response(json.dumps(response), 200)
         except DirectoyException as err:
@@ -194,7 +194,7 @@ def server(app, dir):
             token = headers["admin-token"]
 
         try:
-            dir.remove_file(dir_id, token, filename)
+            directory.remove_file(dir_id, token, filename)
             return make_response("", 204)
         except DirectoyException as err:
             if err.code == PERMISSION_ERR:

@@ -47,7 +47,7 @@ class AuthService:
     def user_of_token(self, token):
         '''Return username of the given token or error'''
         if token == ADMIN_TOKEN:
-            return "admin"   
+            return "admin"
 
     def exists_user(self, username):
         '''Return if given user exists or not'''

@@ -53,7 +53,7 @@ class Directory:
         self.bd_con = sqlite3.connect(self.BD_PATH)
         cur = self.bd_con.cursor()
 
-        id = "root"
+        id_dir = "root"
         uuid_parent = 0
         name = "/"
         readable_by = list()
@@ -69,7 +69,7 @@ class Directory:
         files_str = json.dumps(files)
 
         sql_data = (
-            str(id),
+            str(id_dir),
             uuid_parent,
             name,
             childs_str,
@@ -136,12 +136,12 @@ class Directory:
         self.bd_con.close()
         return True
 
-    def _get_Name_dir(self, id):
+    def _get_Name_dir(self, id_dir):
         """obtener UUID de un dir"""
         self.bd_con = sqlite3.connect(self.BD_PATH)
         cur = self.bd_con.cursor()
 
-        sql_data = (id,)
+        sql_data = (id_dir,)
         sql_sentence = "SELECT name FROM directories WHERE uuid=?"
         cur.execute(sql_sentence, sql_data)
         name = cur.fetchone()[0]
@@ -198,12 +198,12 @@ class Directory:
 
         return files_tuple
 
-    def _get_writeableBy(self, id):
+    def _get_writeableBy(self, id_dir):
         """Comprueba si el user esta en writeable_by"""
         self.bd_con = sqlite3.connect(self.BD_PATH)
         cur = self.bd_con.cursor()
 
-        sql_data = (id,)
+        sql_data = (id_dir,)
         sql_sentence = "SELECT writeable_by FROM directories WHERE uuid=?"
 
         cur.execute(sql_sentence, sql_data)
@@ -215,12 +215,12 @@ class Directory:
 
         return writeable_by
 
-    def _get_UUID_parent(self, id):
+    def _get_UUID_parent(self, id_dir):
         """obtener UUID de un dir"""
         self.bd_con = sqlite3.connect(self.BD_PATH)
         cur = self.bd_con.cursor()
 
-        sql_data = (id,)
+        sql_data = (id_dir,)
         sql_sentence = "SELECT uuid_parent FROM directories WHERE uuid=?"
         cur.execute(sql_sentence, sql_data)
         uuid_parent = cur.fetchone()[0]
@@ -229,12 +229,12 @@ class Directory:
 
         return str(uuid_parent)
 
-    def _get_readableBy(self, id):
+    def _get_readableBy(self, id_dir):
         """Comprueba si el user esta en readable_by"""
         self.bd_con = sqlite3.connect(self.BD_PATH)
         cur = self.bd_con.cursor()
 
-        sql_data = (id,)
+        sql_data = (id_dir,)
         sql_sentence = "SELECT readable_by FROM directories WHERE uuid=?"
 
         cur.execute(sql_sentence, sql_data)
@@ -245,14 +245,14 @@ class Directory:
 
         return readable_by
 
-    def _get_dirURL(self, id):
+    def _get_dirURL(self, id_dir):
         """Obtener la el path de un dir desde root"""
-        dir_name = self._get_Name_dir(id)
+        dir_name = self._get_Name_dir(id_dir)
         path = ""
         listPath = deque()
         listPath.append(dir_name)
         while dir_name != "/":
-            parent = self._get_UUID_parent(id)
+            parent = self._get_UUID_parent(id_dir)
             dir_name = self._get_Name_dir(parent)
             listPath.append(dir_name)
 
@@ -280,10 +280,10 @@ class Directory:
 
         """Añade nuevo child al parent"""
 
-        id = uuid.uuid1()
+        id_dir = uuid.uuid1()
 
         childs = self._get_dirChilds(uuid_parent)
-        new_child = str(id)
+        new_child = str(id_dir)
         childs_list = json.loads(childs)
         for child in childs_list:
             if name == self._get_Name_dir(child):
@@ -318,7 +318,7 @@ class Directory:
         childs_str = json.dumps(childs)
 
         sql_data = (
-            str(id),
+            str(id_dir),
             uuid_parent,
             name,
             childs_str,
@@ -333,20 +333,20 @@ class Directory:
         self.bd_con.commit()
         self.bd_con.close()
 
-    def get_dir_info(self, id, user):
-        if not self._checkDirectory(id):
+    def get_dir_info(self, id_dir, user):
+        if not self._checkDirectory(id_dir):
             raise DirectoyException(
-                f"Directory {id} doesn't exist", DIR_NOTFOUND_ERR
+                f"Directory {id_dir} doesn't exist", DIR_NOTFOUND_ERR
             )
 
-        has_permission = self._checkUser_Readable(id, user)
+        has_permission = self._checkUser_Readable(id_dir, user)
         if not has_permission:
             raise DirectoyException(
                 f"User {user} doesn't have readable permissions", PERMISSION_ERR
             )
 
-        childs = self._get_dirChilds(id)
-        parent = self._get_UUID_parent(id)
+        childs = self._get_dirChilds(id_dir)
+        parent = self._get_UUID_parent(id_dir)
         childs_list = json.loads(childs)
 
         names_childs = list()
@@ -363,37 +363,37 @@ class Directory:
                 f"Directory {uuid_parent} doesn't exist", DIR_NOTFOUND_ERR
             )
 
-        id = self._get_UUID_dir(uuid_parent, name)
+        id_dir = self._get_UUID_dir(uuid_parent, name)
 
-        if not id:
+        if not id_dir:
             raise DirectoyException(
-                f"Directory {id} does not have {name} as child", DIR_NOTFOUND_ERR
+                f"Directory {id_dir} does not have {name} as child", DIR_NOTFOUND_ERR
             )
 
-        has_permission = self._checkUser_Readable(id, user)
+        has_permission = self._checkUser_Readable(id_dir, user)
         if not has_permission:
             raise DirectoyException(
                 f"User {user} doesn't have readable permissions", PERMISSION_ERR
             )
 
-        childs = self._get_dirChilds(id)
+        childs = self._get_dirChilds(id_dir)
         childs_list = json.loads(childs)
 
         return childs_list
 
-    def get_dir_files(self, id, user):
-        if not self._checkDirectory(id):
+    def get_dir_files(self, id_dir, user):
+        if not self._checkDirectory(id_dir):
             raise DirectoyException(
-                f"Directory {id} doesn't exist", DIR_NOTFOUND_ERR
+                f"Directory {id_dir} doesn't exist", DIR_NOTFOUND_ERR
             )
 
-        has_permission = self._checkUser_Readable(id, user)
+        has_permission = self._checkUser_Readable(id_dir, user)
         if not has_permission:
             raise DirectoyException(
                 f"User {user} doesn't have readable permissions", PERMISSION_ERR
             )
 
-        files = self._get_dirFiles(id)
+        files = self._get_dirFiles(id_dir)
         files_list = json.loads(files)
         names = list()
         for x in files_list:
@@ -401,20 +401,20 @@ class Directory:
 
         return names
 
-    def get_file_url(self, id, filename, user):
-        if not self._checkDirectory(id):
+    def get_file_url(self, id_dir, filename, user):
+        if not self._checkDirectory(id_dir):
             raise DirectoyException(
-                f"Directory {id} doesn't exist", DIR_NOTFOUND_ERR
+                f"Directory {id_dir} doesn't exist", DIR_NOTFOUND_ERR
             )
 
-        has_permission = self._checkUser_Readable(id, user)
+        has_permission = self._checkUser_Readable(id_dir, user)
         if not has_permission:
             raise DirectoyException(
                 f"User {user} doesn't have readable permissions", PERMISSION_ERR
             )
 
         url = ""
-        files = json.loads(self._get_dirFiles(id))
+        files = json.loads(self._get_dirFiles(id_dir))
 
         for x in files:
             if x[0] == filename:
@@ -470,16 +470,16 @@ class Directory:
         self.bd_con.commit()
         self.bd_con.close()
 
-    def add_user_readable(self, id, user, owner):
+    def add_user_readable(self, id_dir, user, owner):
         """Retorna si un elemento dado esta o no en la lista"""
-        has_permission = self._checkUser_Writeable(id, owner)
+        has_permission = self._checkUser_Writeable(id_dir, owner)
         if not has_permission:
             raise DirectoyException(f"User {user} doesn't have writing permissions")
 
-        if not self._checkDirectory(id):
-            raise DirectoyException(f"Directory {id} doesn't exist")
+        if not self._checkDirectory(id_dir):
+            raise DirectoyException(f"Directory {id_dir} doesn't exist")
 
-        readers = self._get_readableBy(id)
+        readers = self._get_readableBy(id_dir)
         readers.append(user)
         readers_str = json.dumps(readers)
 
@@ -487,7 +487,7 @@ class Directory:
         cur = self.bd_con.cursor()
         sql_data = (
             readers_str,
-            id,
+            id_dir,
         )
         sql_sentence = "UPDATE directories SET readable_by=? WHERE uuid=?"
 
@@ -496,18 +496,18 @@ class Directory:
         self.bd_con.commit()
         self.bd_con.close()
 
-    def remove_user_readable(self, id, user, owner):
+    def remove_user_readable(self, id_dir, user, owner):
         """Retorna si un elemento dado esta o no en la lista"""
-        has_permission = self._checkUser_Writeable(id, owner)
+        has_permission = self._checkUser_Writeable(id_dir, owner)
         if not has_permission:
             raise DirectoyException(f"User {user} doesn't have writing permissions")
 
-        if not self._checkDirectory(id):
+        if not self._checkDirectory(id_dir):
             raise DirectoyException(
-                f"Error while adding user readable, directory {id} does not exist"
+                f"Error while adding user readable, directory {id_dir} does not exist"
             )
 
-        readers = self._get_readableBy(id)
+        readers = self._get_readableBy(id_dir)
         if user not in readers:
             raise DirectoyException(
                 f"Error while removing user writable, user {user} not in writable_by list"
@@ -524,7 +524,7 @@ class Directory:
 
         sql_data = (
             readers_str,
-            id,
+            id_dir,
         )
         sql_sentence = "UPDATE directories SET readable_by=? WHERE uuid=?"
 
@@ -533,20 +533,20 @@ class Directory:
         self.bd_con.commit()
         self.bd_con.close()
 
-    def add_user_writeable(self, id, user, owner):
+    def add_user_writeable(self, id_dir, user, owner):
         """Retorna si un elemento dado esta o no en la lista"""
-        has_permission = self._checkUser_Writeable(id, owner)
+        has_permission = self._checkUser_Writeable(id_dir, owner)
         if not has_permission:
             raise DirectoyException(
                 f"{owner} has not permissions to add user writeable"
             )
 
-        if not self._checkDirectory(id):
+        if not self._checkDirectory(id_dir):
             raise DirectoyException(
-                f"Error while adding user writeable, directory {id} does not exist"
+                f"Error while adding user writeable, directory {id_dir} does not exist"
             )
 
-        writers = self._get_writeableBy(id)
+        writers = self._get_writeableBy(id_dir)
         writers.append(user)
         writers_str = json.dumps(writers)
 
@@ -554,7 +554,7 @@ class Directory:
         cur = self.bd_con.cursor()
         sql_data = (
             writers_str,
-            id,
+            id_dir,
         )
         sql_sentence = "UPDATE directories SET writeable_by=? WHERE uuid=?"
 
@@ -563,20 +563,20 @@ class Directory:
         self.bd_con.commit()
         self.bd_con.close()
 
-    def remove_user_writeable(self, id, user, owner):
+    def remove_user_writeable(self, id_dir, user, owner):
         """Retorna si un elemento dado esta o no en la lista"""
-        has_permission = self._checkUser_Writeable(id, owner)
+        has_permission = self._checkUser_Writeable(id_dir, owner)
         if not has_permission:
             raise DirectoyException(
                 f"{owner} has not permissions to remove user writeable"
             )
 
-        if not self._checkDirectory(id):
+        if not self._checkDirectory(id_dir):
             raise DirectoyException(
-                f"Error while removing user writeable, directory {id} does not exist"
+                f"Error while removing user writeable, directory {id_dir} does not exist"
             )
 
-        writers = self._get_writeableBy(id)
+        writers = self._get_writeableBy(id_dir)
         if user not in writers:
             raise DirectoyException(
                 f"Error while removing user writeable, user {user} not in writeable_by list"
@@ -594,7 +594,7 @@ class Directory:
 
         sql_data = (
             writers_str,
-            id,
+            id_dir,
         )
         sql_sentence = "UPDATE directories SET writeable_by=? WHERE uuid=?"
 
@@ -603,21 +603,21 @@ class Directory:
         self.bd_con.commit()
         self.bd_con.close()
 
-    def add_file(self, id, user, name, url=None):
+    def add_file(self, id_dir, user, name, url=None):
         """Vacia la lista"""
-        if not self._checkDirectory(id):
-            raise DirectoyException(f"Directory {id} doesn't exist", DIR_NOTFOUND_ERR)
+        if not self._checkDirectory(id_dir):
+            raise DirectoyException(f"Directory {id_dir} doesn't exist", DIR_NOTFOUND_ERR)
 
         if not url:
-            url = self._get_dirURL(id) + "/" + name
+            url = self._get_dirURL(id_dir) + "/" + name
 
-        has_permission = self._checkUser_Writeable(id, user)
+        has_permission = self._checkUser_Writeable(id_dir, user)
         if not has_permission:
             raise DirectoyException(
                 f"{user} doens't have permissions writing permissions", PERMISSION_ERR
             )
 
-        tuples_raw = self._get_dirFiles(id)
+        tuples_raw = self._get_dirFiles(id_dir)
         tuples_list = json.loads(tuples_raw)
         print(tuples_list)
         for file_tuple in tuples_list:
@@ -629,7 +629,7 @@ class Directory:
         tuples_list.append(tuple((name, url)))
         print(tuples_list)
 
-        childs = self._get_dirChilds(id)
+        childs = self._get_dirChilds(id_dir)
         childs_list = json.loads(childs)
         for child in childs_list:
             if name == self._get_Name_dir(child):
@@ -644,7 +644,7 @@ class Directory:
         tuples_str = json.dumps(tuples_list)
         sql_data = (
             tuples_str,
-            id,
+            id_dir,
         )
 
         sql_sentence = "UPDATE directories SET tuples=? WHERE uuid=?"
@@ -656,18 +656,18 @@ class Directory:
 
         return url
 
-    def remove_file(self, id, user, name):
+    def remove_file(self, id_dir, user, name):
         """Vacia la lista"""
-        if not self._checkDirectory(id):
-            raise DirectoyException(f"Directory {id} doesn't exist", DIR_NOTFOUND_ERR)
+        if not self._checkDirectory(id_dir):
+            raise DirectoyException(f"Directory {id_dir} doesn't exist", DIR_NOTFOUND_ERR)
 
-        has_permission = self._checkUser_Writeable(id, user)
+        has_permission = self._checkUser_Writeable(id_dir, user)
         if not has_permission:
             raise DirectoyException(
                 f"{user} doens't have permissions writing permissions", PERMISSION_ERR
             )
 
-        tuples_raw = self._get_dirFiles(id)
+        tuples_raw = self._get_dirFiles(id_dir)
         tuples_list = json.loads(tuples_raw)
 
         found = False
@@ -689,7 +689,7 @@ class Directory:
         tuples_str = json.dumps(tuples_list)
         sql_data = (
             tuples_str,
-            id,
+            id_dir,
         )
         sql_sentence = "UPDATE directories SET tuples=? WHERE uuid=?"
 

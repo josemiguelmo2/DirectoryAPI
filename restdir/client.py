@@ -2,7 +2,6 @@
     Interfaces para el acceso al servicio de directorio
 """
 import requests
-import json
 from restdir.auth import AuthService
 HEADERS = {"content-type": "application/json"}
 ADMIN_HEADER = {"admin-token": ""}
@@ -31,7 +30,7 @@ class DirectoryService:
         """Obtiene el directorio raiz"""
 
         AuthServer=AuthService(self.uri_auth)
-        try: 
+        try:
             if AuthServer.administrator_login(user):
                 ADMIN_HEADER['admin-token'] = user
                 return Directory(self.uri_dir, ADMIN_HEADER, ROOT_ID)
@@ -52,7 +51,7 @@ class Directory:
             self.root = f"{self.root}/"
         self.timeout = timeout
 
-        self.id = dir_id
+        self.id_dir = dir_id
         self.header = header
         self.childs = ""
         self.id_parent = ""
@@ -60,7 +59,7 @@ class Directory:
         print(self.self_info())
 
     def self_info(self):
-        dir_id = self.id
+        dir_id = self.id_dir
         result = requests.get(
             f"{self.root}v1/directory/{dir_id}",
             headers=self.header,
@@ -94,7 +93,7 @@ class Directory:
 
     def new_directory(self, directory_name):
         """Crea un nuevo subdirectorio en el directorio"""
-        dir_id = self.id
+        dir_id = self.id_dir
         nombre_hijo = directory_name
         result = requests.put(
             f"{self.root}v1/directory/{dir_id}/{nombre_hijo}",
@@ -115,7 +114,7 @@ class Directory:
     def remove_directory(self, directory_name):
         """Elimina un subdirectorio del directorio"""
         result = requests.delete(
-            f"{self.root}v1/directory/{self.id}/{directory_name}",
+            f"{self.root}v1/directory/{self.id_dir}/{directory_name}",
             headers=self.header,
             timeout=self.timeout,
         )
@@ -128,10 +127,10 @@ class Directory:
 
     def list_files(self):
         """Obtiene una lista de ficheros del directorio"""
-        dir_id = self.id
+        dir_id = self.id_dir
         result = requests.get(
-            f"{self.root}v1/files/{dir_id}", 
-            headers=self.header, 
+            f"{self.root}v1/files/{dir_id}",
+            headers=self.header,
             timeout=self.timeout
         )
 
@@ -144,7 +143,7 @@ class Directory:
     def new_file(self, filename, file_url):
         """Crea un nuevo fichero a partir de un blob"""
         result = requests.put(
-            f"{self.root}v1/files/{self.id}/{filename}",
+            f"{self.root}v1/files/{self.id_dir}/{filename}",
             data=file_url,
             headers=self.header,
             timeout=self.timeout,
@@ -162,7 +161,7 @@ class Directory:
 
     def remove_file(self, filename):
         """Elimina un fichero del directorio"""
-        dir_id = self.id
+        dir_id = self.id_dir
         result = requests.delete(
             f"{self.root}v1/files/{dir_id}/{filename}",
             headers=self.header,

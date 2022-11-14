@@ -9,15 +9,15 @@
         "api_key": false,
         "local_database_path": null,
         "safety_version": "2.3.1",
-        "timestamp": "2022-11-06 12:56:20",
+        "timestamp": "2022-11-14 19:16:16",
         "packages_found": 11,
         "vulnerabilities_found": 0,
         "vulnerabilities_ignored": 0,
         "remediations_recommended": 0,
         "telemetry": {
             "os_type": "Linux",
-            "os_release": "5.4.0-131-generic",
-            "os_description": "Linux-5.4.0-131-generic-x86_64-with-glibc2.29",
+            "os_release": "5.15.0-52-generic",
+            "os_description": "Linux-5.15.0-52-generic-x86_64-with-glibc2.29",
             "python_version": "3.8.10",
             "safety_command": "check",
             "safety_options": {
@@ -32,9 +32,9 @@
             "safety_source": "cli"
         },
         "git": {
-            "branch": "api_rest",
+            "branch": "main",
             "tag": "",
-            "commit": "abac9bd2e298d045276b634f2e0569caec06bd0c",
+            "commit": "14cb0d1b7454a5f5618f8262fb33e6c58c16cc24",
             "dirty": true,
             "origin": "https://github.com/josemiguelmo2/DirectoryAPI.git"
         },
